@@ -1,10 +1,27 @@
-exports.build_json_ptw = (jobID) => {
+require("dotenv").config();
+const {buildAlertCpu} = require("./alerts/alertCpu")
+const {buildAlertRam} = require("./alerts/alertRam")
+const convertToByte = 1048576
+const prom_ds_name = process.env.PROM_DS_NAME
+
+exports.build_json_ptw = (jobID,cpuThreshold,ramThreshold,payloadURL,cpuDownScaleThreshold,ramDownScaleThreshold) => {
     const ram = jobID +"_ram"
     const cpu = jobID +"_cpu"
+    console.log("CPUALERT",cpuThreshold)
+    console.log("RAMALERT",ramThreshold)
+    console.log("CPU_DownScale",cpuDownScaleThreshold)
+    console.log("RamDownScale",ramDownScaleThreshold)
+    console.log("Payload URL",payloadURL)
+  
+    //alertCPU = (cpuThreshold ? buildAlertCpu(cpuThreshold,jobID,payloadURL) : {})
+    alertCPU = (cpuThreshold && cpuDownScaleThreshold ? buildAlertCpu(cpuThreshold,cpuDownScaleThreshold,jobID,payloadURL) : cpuThreshold ? buildAlertCpu(cpuThreshold,null,jobID,payloadURL) : cpuDownScaleThreshold ? buildAlertCpu(null,cpuDownScaleThreshold,jobID,payloadURL) : {})
+    //    alertRAM = (ramThreshold ? buildAlertRam(ramThreshold * convertToByte,jobID,payloadURL) : {})
+    alertRAM = (ramThreshold && ramDownScaleThreshold ? buildAlertRam(ramThreshold * convertToByte,ramDownScaleThreshold * convertToByte,jobID,payloadURL) : {})
+
     const dashboard_json = {
         "__inputs": [
           {
-            "name": "DS_PROMETHEUS_DATA_SOURCE",
+            "name": `${prom_ds_name}`,
             "label": "prometheus_data_source",
             "description": "",
             "type": "datasource",
@@ -51,12 +68,12 @@ exports.build_json_ptw = (jobID) => {
         "id": null,
         "links": [],
         "panels": [
-          {
+          { ...alertRAM,
             "aliasColors": {},
             "bars": false,
             "dashLength": 10,
             "dashes": false,
-            "datasource": "${DS_PROMETHEUS}",
+            "datasource": `${prom_ds_name}`,
             "fieldConfig": {
               "defaults": {
                 "custom": {},
@@ -145,11 +162,12 @@ exports.build_json_ptw = (jobID) => {
             }
           },
           {
+            ...alertCPU,
             "aliasColors": {},
             "bars": false,
             "dashLength": 10,
             "dashes": false,
-            "datasource": "${DS_PROMETHEUS}",
+            "datasource": `${prom_ds_name}`,
             "fieldConfig": {
               "defaults": {
                 "custom": {}
@@ -254,8 +272,8 @@ exports.build_json_ptw = (jobID) => {
           }]
         },
         "time": {
-          "from": "2020-10-02T00:25:46.003Z",
-          "to": "2020-10-02T12:25:46.003Z"
+          "from": "now-3h",
+          "to": "now"
         },
         "timepicker": {
           "refresh_intervals": [
@@ -273,7 +291,7 @@ exports.build_json_ptw = (jobID) => {
         },
         "timezone": "",
         "title": "PushGateWay",
-        // "uid": "foc6zyKGz",
+        "uid": `${jobID}`,
         // "version": 2
       }
 

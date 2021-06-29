@@ -1,6 +1,6 @@
 const {get_user_details,create_folder,delete_folder,change_permissions_folder,buildDashboard} = require("../grafana_api_calls/grafana_api_calls")
 
-exports.createCustomDashboard = async (mail,jobid,dtype) =>{
+exports.createCustomDashboard = async (mail,jobid,dtype,cpuThreshold,ramThreshold,payloadURL,cpuDownScaleThreshold,ramDownScaleThreshold) =>{
     let user,folderData,cDash,results
     try {
         user = await get_user_details(mail)
@@ -9,7 +9,7 @@ exports.createCustomDashboard = async (mail,jobid,dtype) =>{
         status_permission = await change_permissions_folder(user.id,folderData.uid)
         console.log("folderData",folderData)
 
-        cDash = await buildDashboard(folderData.id,jobid,dtype)
+        cDash = await buildDashboard(folderData.id,jobid,dtype,cpuThreshold,ramThreshold,payloadURL,cpuDownScaleThreshold,ramDownScaleThreshold)
 
         return 0
 

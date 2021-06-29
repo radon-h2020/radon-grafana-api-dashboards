@@ -1,8 +1,18 @@
-exports.build_json_docker = (jobID) => {
+require("dotenv").config();
+const {buildAlertCpu} = require("./alerts/alertCpu")
+const {buildAlertRam} = require("./alerts/alertRam")
+const convertToByte = 1048576
+const prom_ds_name = process.env.PROM_DS_NAME
+exports.build_json_docker = (jobID,cpuThreshold,ramThreshold,payloadURL,cpuDownScaleThreshold,ramDownScaleThreshold) => {
+  console.log("CPUALERT",cpuThreshold)
+  console.log("RAMALERT",ramThreshold)
+
+  alertCPU = (cpuThreshold ? buildAlertCpu(cpuThreshold,jobID) : {})
+  alertRAM = (ramThreshold ? buildAlertRam(ramThreshold * convertToByte,jobID) : {})
     const dashboard_json = {
         "__inputs": [
           {
-            "name": "DS_PROMETHEUS_DATA_SOURCE",
+            "name": `${prom_ds_name}`,
             "label": "prometheus_data_source",
             "description": "prometheus with cAdvisor as a target",
             "type": "datasource",
@@ -62,7 +72,8 @@ exports.build_json_docker = (jobID) => {
                   "rgba(237, 129, 40, 0.89)",
                   "rgba(50, 172, 45, 0.97)"
                 ],
-                "datasource": "${DS_PROMETHEUS}",
+                "datasource": `${prom_ds_name}`,
+                "description": `${jobID}`,
                 "editable": true,
                 "error": false,
                 "format": "none",
@@ -143,7 +154,7 @@ exports.build_json_docker = (jobID) => {
                   "rgba(237, 129, 40, 0.89)",
                   "rgba(50, 172, 45, 0.97)"
                 ],
-                "datasource": "${DS_PROMETHEUS}",
+                "datasource": `${prom_ds_name}`,
                 "editable": true,
                 "error": false,
                 "format": "mbytes",
@@ -224,7 +235,7 @@ exports.build_json_docker = (jobID) => {
                   "rgba(237, 129, 40, 0.89)",
                   "rgba(50, 172, 45, 0.97)"
                 ],
-                "datasource": "${DS_PROMETHEUS}",
+                "datasource": `${prom_ds_name}`,
                 "editable": true,
                 "error": false,
                 "format": "percent",
@@ -304,11 +315,12 @@ exports.build_json_docker = (jobID) => {
             "editable": true,
             "height": "250px",
             "panels": [
-              {
+              { ...alertCPU,
                 "aliasColors": {},
                 "bars": false,
-                "datasource": "${DS_PROMETHEUS}",
+                "datasource": `${prom_ds_name}`,
                 "decimals": 2,
+                "description": `${jobID}`,
                 "editable": true,
                 "error": false,
                 "fill": 1,
@@ -335,6 +347,9 @@ exports.build_json_docker = (jobID) => {
                 "linewidth": 2,
                 "links": [],
                 "nullPointMode": "connected",
+                // "options": {
+                //   "alertThreshold": true
+                // },
                 "percentage": false,
                 "pointradius": 5,
                 "points": false,
@@ -353,6 +368,15 @@ exports.build_json_docker = (jobID) => {
                     "step": 10
                   }
                 ],
+                // "thresholds": [
+                //   {
+                //     "colorMode": "critical",
+                //     "fill": true,
+                //     "line": true,
+                //     "op": "gt",
+                //     "value": 0.5
+                //   }
+                // ],
                 "timeFrom": null,
                 "timeShift": null,
                 "title": "CPU Usage",
@@ -394,11 +418,12 @@ exports.build_json_docker = (jobID) => {
             "editable": true,
             "height": "250px",
             "panels": [
-              {
+              { ...alertRAM,
                 "aliasColors": {},
                 "bars": false,
-                "datasource": "${DS_PROMETHEUS}",
+                "datasource": `${prom_ds_name}`,
                 "decimals": 2,
+                "description": `${jobID}`,
                 "editable": true,
                 "error": false,
                 "fill": 1,
@@ -488,7 +513,8 @@ exports.build_json_docker = (jobID) => {
               {
                 "aliasColors": {},
                 "bars": false,
-                "datasource": "${DS_PROMETHEUS}",
+                "datasource": `${prom_ds_name}`,
+                "description": `${jobID}`,
                 "editable": true,
                 "error": false,
                 "fill": 1,
@@ -566,7 +592,7 @@ exports.build_json_docker = (jobID) => {
               {
                 "aliasColors": {},
                 "bars": false,
-                "datasource": "${DS_PROMETHEUS}",
+                "datasource": `${prom_ds_name}`,
                 "editable": true,
                 "error": false,
                 "fill": 1,

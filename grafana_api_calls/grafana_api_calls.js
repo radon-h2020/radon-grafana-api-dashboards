@@ -9,6 +9,22 @@ const headers = {
 }
 const grafana_url = process.env.GRAFANA_URL
 
+
+
+exports.get_notifications_uid = async () => {
+  let results = await axios.get(`${grafana_url}/api/alert-notifications`, {
+      auth: {
+        username: process.env.GRAFANA_ADMIN_USERNAME,
+        password: process.env.GRAFANA_ADMIN_PASSWORD
+      }
+    })
+    // console.log(results)
+    let data = results.data
+    process.env['NOTIFICATION_ID'] = data[0].uid
+    // console.log(process.env.NOTIFICATION_ID)
+    // return data
+}
+
 exports.create_data_source_aws = async (userID,jobid,keys) => {
   const {accessKey,secretKey} = keys
   const datasource_json = 
@@ -45,12 +61,15 @@ try {
 }
 
 exports.get_user_details = async (mail) => {
+
+
     let results = await axios.get(`${grafana_url}/api/users/lookup?loginOrEmail=${mail}`, {
         auth: {
           username: process.env.GRAFANA_ADMIN_USERNAME,
           password: process.env.GRAFANA_ADMIN_PASSWORD
         }
       })
+      console.log(results)
       let data = results.data
       return data
 }
@@ -79,16 +98,20 @@ exports.change_permissions_folder = async(userId,folderuuid) => {
     return results.data
 }
 
-exports.buildDashboard = async(folderid,jobID,Dtype) => {
+exports.buildDashboard = async(folderid,jobID,Dtype,cpuThreshold=null,ramThreshold=null,payloadURL=null,cpuDownScaleThreshold=null,ramDownScaleThreshold=null) => {
     // const json_dashboard = dashboard.build_json(jobID)
     let json_dashboard
 
     if (Dtype === "docker") {
-      json_dashboard = build_json_docker(jobID)
+      //TODO
+      // ADD PAYLOAD URL FUNCTIONALITY
+      json_dashboard = build_json_docker(jobID,cpuThreshold,ramThreshold,cpuDownScaleThreshold,ramDownScaleThreshold,payloadURL)
     } else if (Dtype ==="awsLambda") {
+      //TODO
+      // ADD PAYLOAD URL FUNCTIONALITY
       json_dashboard = build_json_awsLambda(jobID)
     } else if (Dtype === "custom") {
-      json_dashboard = build_json_ptw(jobID)
+      json_dashboard = build_json_ptw(jobID,cpuThreshold,ramThreshold,payloadURL,cpuDownScaleThreshold,ramDownScaleThreshold)
     }
     else {
         return "Please add type"
@@ -167,8 +190,19 @@ exports.get_datasource_by_title = async(name) => {
 }
 
 exports.get_folder_permissions = async(folderuid) => {
-  let folderPermissions = await axios.get(`${grafana_url}/api/folders/${folderuid}/permissions`,{headers})                          
+  let folderPermissions = await axios.get(`${grafana_url}/api/folders/${folderuid}/permissions`,{headers})
+  .catch((e)=>console.log(e.response))                          
   const {data} = folderPermissions
   return data
 }
 
+exports.get_dashboard = async(uid) => {
+  let dashboard_json = await axios.get(`${grafana_url}/api/dashboards/uid/${uid}`,{headers})
+  .catch((e)=>{
+    console.log("NOT FOUND")
+    return -1
+  })
+  // console.log(dashboard_json.hasOwnProperty('data'))
+  const data = (dashboard_json.data ? dashboard_json.data : -1)
+  return data;
+}
